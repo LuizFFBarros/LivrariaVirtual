@@ -12,12 +12,12 @@
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "api/biblioteca",
+      "launchUrl": "api/Livraria",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "Biblioteca": {
+    "Livraria": {
       "commandName": "Project",
       "launchBrowser": true,
       "launchUrl": "./",

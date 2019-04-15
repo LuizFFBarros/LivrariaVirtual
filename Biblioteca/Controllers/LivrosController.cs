@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
-using Biblioteca.Model;
+using Livraria.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Biblioteca.Controllers
+namespace Livraria.Controllers
 {
     [Route("api/livros")]
     [ApiController]

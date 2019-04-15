@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Biblioteca.Model;
-using Microsoft.AspNetCore.Http;
+using Livraria.Model;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Biblioteca.Controllers
+namespace Livraria.Controllers
 {
     [Route("api/carrinho")]
     [ApiController]
