@@ -1,7 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Livraria.Model;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace Livraria.Controllers
 {
@@ -9,7 +12,11 @@ namespace Livraria.Controllers
     [ApiController]
     public class CarrinhoComprasController : ControllerBase
     {
-
+        private static readonly HttpClient client = new HttpClient();
+        public CarrinhoComprasController()
+        {
+            client.BaseAddress = new System.Uri(@"https://localhost:5001/");
+        }
         List<Carrinho> carrinho = new List<Carrinho>
         {
             new Carrinho
@@ -70,9 +77,8 @@ namespace Livraria.Controllers
 
         [HttpGet]
         [Route("itens/{id}")]
-        public ActionResult<IEnumerable<string>> InsereItemCarrinho(int id)
+        public async Task<ActionResult<IEnumerable<string>>> RetornaItensDoCarrinho(int id)
         {
-
             return Ok(carrinho.FirstOrDefault(a => a.Codigo == id));
         }
 
@@ -81,9 +87,16 @@ namespace Livraria.Controllers
 
         [HttpPost]
         [Route("itens/{id}")]
-        public ActionResult<IEnumerable<string>> InsereItemCarrinho(int id, [FromBody]Carrinho item)
+        public async Task<ActionResult<IEnumerable<string>>> InsereItemCarrinho(int id, [FromBody]Livro item)
         {
-            carrinho.Add(item);
+            
+            
+            var urlRequisicao = $"/api/ValidarDados/usuario?Codigo=1&Nome=Luiz";
+            
+            var resultado = await client.GetAsync(urlRequisicao);
+
+            var itensCarriho  = carrinho.Where(a => a.Codigo == id).FirstOrDefault();
+            itensCarriho.Livros.Add(item);
             return Ok();
         }
 
@@ -108,7 +121,10 @@ namespace Livraria.Controllers
             return Ok();
         }
 
-
-
+    }
+    class Usuario
+    {
+        public int Codigo { get; set; }
+        public string Nome { get; set; }
     }
 }
