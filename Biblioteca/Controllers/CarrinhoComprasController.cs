@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Web;
+using Livraria.Extension;
 using Livraria.Model;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -26,7 +28,7 @@ namespace Livraria.Controllers
                 {
                     new Livro
                     {
-                        codigo = 1,
+                        Codigo = 1,
                         Autores = new string[] 
                         {
                             "Autor A",
@@ -46,7 +48,7 @@ namespace Livraria.Controllers
                 {
                     new Livro
                     {
-                        codigo =1,
+                        Codigo =1,
                         Autores = new string[] 
                         {
                             "Autor B"
@@ -58,7 +60,7 @@ namespace Livraria.Controllers
                     },
                     new Livro
                     {
-                        codigo =1,
+                        Codigo =1,
                         Autores = new string[] 
                         {
                             "Autor C",
@@ -77,7 +79,7 @@ namespace Livraria.Controllers
 
         [HttpGet]
         [Route("itens/{id}")]
-        public async Task<ActionResult<IEnumerable<string>>> RetornaItensDoCarrinho(int id)
+        public ActionResult<IEnumerable<string>> RetornaItensDoCarrinho(int id)
         {
             return Ok(carrinho.FirstOrDefault(a => a.Codigo == id));
         }
@@ -86,45 +88,83 @@ namespace Livraria.Controllers
 
 
         [HttpPost]
-        [Route("itens/{id}")]
-        public async Task<ActionResult<IEnumerable<string>>> InsereItemCarrinho(int id, [FromBody]Livro item)
+        [Route("itens")]
+        public async Task<ActionResult<IEnumerable<string>>> InsereItemCarrinho(int id, [FromBody]DadosEntradaInsercaoExclusaoCarrinho dadosEntrada)
         {
-            
-            
-            var urlRequisicao = $"/api/ValidarDados/usuario?Codigo=1&Nome=Luiz";
+
+            var dadosChaveValor = dadosEntrada.Usuario.ToKeyValue();
+            var urlEncoded = new FormUrlEncodedContent(dadosChaveValor);
+            var urlString = await urlEncoded.ReadAsStringAsync();
+
+            var urlRequisicao = $"/api/ValidarDados/usuario?{urlString}";
             
             var resultado = await client.GetAsync(urlRequisicao);
+            if (resultado.StatusCode != System.Net.HttpStatusCode.OK)
+                return NotFound("Dados de Usuario não encontrados.");
 
             var itensCarriho  = carrinho.Where(a => a.Codigo == id).FirstOrDefault();
-            itensCarriho.Livros.Add(item);
-            return Ok();
+            if (itensCarriho.Livros.Where(a => a.Codigo == dadosEntrada.Livro.Codigo).Any())
+                return BadRequest("Item ja existente no carrinho");
+
+            itensCarriho.Livros.Add(dadosEntrada.Livro);
+            return Ok("Item inserido com sucesso.");
         }
 
         
         [HttpPut]
         [Route("itens/{id}")]
-        public ActionResult<IEnumerable<string>> AlteraItemCarrinho(int id, [FromBody]Carrinho item)
+        public async Task<ActionResult<IEnumerable<string>>> AlteraItemCarrinho(int id, [FromBody]DadosEntradaAlteracaoCarrinho dadosEntrada )
         {
-            var cart = carrinho.Where(a => a.Codigo == item.Codigo).FirstOrDefault();
+
+            var dadosChaveValor = dadosEntrada.Usuario.ToKeyValue();
+            var urlEncoded = new FormUrlEncodedContent(dadosChaveValor);
+            var urlString = await urlEncoded.ReadAsStringAsync();
+
+            var urlRequisicao = $"/api/ValidarDados/usuario?{urlString}";
+
+            var resultado = await client.GetAsync(urlRequisicao);
+            if (resultado.StatusCode != System.Net.HttpStatusCode.OK)
+                return NotFound("Dados de Usuario não encontrados.");
+
+            var cart = carrinho.Where(a => a.Codigo == dadosEntrada.Carrinho.Codigo).FirstOrDefault();
             carrinho.Remove(cart);
-            carrinho.Add(item);
+            carrinho.Add(dadosEntrada.Carrinho);
             return Ok();
         }
 
 
         [HttpDelete]
         [Route("itens/{id}")]
-        public ActionResult<IEnumerable<string>> RemoveItemCarrinho(int id)
+        public async Task<ActionResult<IEnumerable<string>>> RemoveItemCarrinho(int id,[FromQuery]DadosEntradaInsercaoExclusaoCarrinho dadosEntrada)
         {
+            var dadosChaveValor = dadosEntrada.Usuario.ToKeyValue();
+            var urlEncoded = new FormUrlEncodedContent(dadosChaveValor);
+            var urlString = await urlEncoded.ReadAsStringAsync();
+
+            var urlRequisicao = $"/api/ValidarDados/usuario?{urlString}";
+
+            var resultado = await client.GetAsync(urlRequisicao);
+            if (resultado.StatusCode != System.Net.HttpStatusCode.OK)
+                return NotFound("Dados de Usuario não encontrados.");
+
             var cart = carrinho.Where(a => a.Codigo == id).FirstOrDefault();
             carrinho.Remove(cart);
             return Ok();
         }
 
     }
-    class Usuario
+    public class DadosEntradaInsercaoExclusaoCarrinho
     {
-        public int Codigo { get; set; }
-        public string Nome { get; set; }
+        public Usuario Usuario { get; set; }
+        public Livro Livro { get; set; }
+
     }
+    public class DadosEntradaAlteracaoCarrinho
+    {
+        public Usuario Usuario { get; set; }
+        public Carrinho Carrinho { get; set; }
+    }
+
+
+
 }

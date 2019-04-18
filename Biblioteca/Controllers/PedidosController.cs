@@ -1,10 +1,12 @@
-﻿using System;
+﻿using Livraria.Extension;
+using Livraria.Model;
+using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
-using Livraria.Model;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Livraria.Controllers
 {
@@ -12,7 +14,11 @@ namespace Livraria.Controllers
     [ApiController]
     public class PedidosController : ControllerBase
     {
-
+        private static readonly HttpClient client = new HttpClient();
+        public PedidosController()
+        {
+           
+        }
         List<Pedido> pedido = new List<Pedido>
         {
             new Pedido
@@ -25,7 +31,7 @@ namespace Livraria.Controllers
                     {
                         new Livro
                         {
-                            codigo = 1,
+                            Codigo = 1,
                             Autores = new string[]
                             {
                                 "Autor A",
@@ -53,7 +59,7 @@ namespace Livraria.Controllers
                     {
                         new Livro
                         {
-                            codigo =1,
+                            Codigo =1,
                             Autores = new string[]
                             {
                                 "Autor B"
@@ -65,7 +71,7 @@ namespace Livraria.Controllers
                         },
                         new Livro
                         {
-                            codigo =1,
+                            Codigo =1,
                             Autores = new string[]
                             {
                                 "Autor C",
@@ -82,7 +88,62 @@ namespace Livraria.Controllers
             }
         };
 
-        
+
+        [HttpPost]
+        [Route("pedido/")]
+        public async Task<ActionResult<IEnumerable<string>>> FinalizarPedido([FromBody]FInalizarPedidoEntrada dadosEntrada)
+        {
+            //autenticar usuario
+            client.BaseAddress = new System.Uri(@"https://localhost:5001/");
+            var dadosChaveValorUsuario = dadosEntrada.Usuario.ToKeyValue();
+            var urlEncoded = new FormUrlEncodedContent(dadosChaveValorUsuario);
+            var urlString = await urlEncoded.ReadAsStringAsync();
+
+            var urlRequisicao = $"/api/ValidarDados/usuario?{urlString}";
+
+            var resultado = await client.GetAsync(urlRequisicao);
+            if (resultado.StatusCode != HttpStatusCode.OK)
+            {
+                return NotFound("Dados de Usuario não encontrados.");
+            }
+
+
+            //chamar auditoria
+            client.BaseAddress = new System.Uri(@"https://localhost:5010/");
+            var dadosChaveValorAuditoria = dadosEntrada.Usuario.ToKeyValue();
+            var urlEncodedAuditoria = new FormUrlEncodedContent(dadosChaveValorAuditoria);
+            var urlStringAuditoria = await urlEncodedAuditoria.ReadAsStringAsync();
+
+            //verifica estoque
+
+            var urlRequisicaoAuditoria = $"/api/auditoria/produto?{dadosEntrada.Pedido.Codigo}";
+            var resultadoAuditoria = await client.GetAsync(urlRequisicaoAuditoria);
+
+            if (resultadoAuditoria.StatusCode != HttpStatusCode.OK)
+                return BadRequest("Sem Estoque");
+
+            //altera estoque
+            urlRequisicaoAuditoria = $"/api/auditoria/produto?{dadosEntrada.Pedido.Codigo}&{urlStringAuditoria}";
+            resultadoAuditoria = await client.PutAsync(urlRequisicaoAuditoria, urlEncodedAuditoria);
+
+
+
+            //chamar transacao credito
+            client.BaseAddress = new System.Uri(@"https://localhost:5003/");
+            var dadosChaveValorCredito = dadosEntrada.Usuario.ToKeyValue();
+            var urlEncodedCredito = new FormUrlEncodedContent(dadosChaveValorCredito);
+            var urlStringCredito = await urlEncodedCredito.ReadAsStringAsync();
+
+            var urlRequisicaoCredito = $"/api/CartaoCredito/cartao/compra";
+            var resultadoCredito = await client.PostAsync(urlRequisicaoCredito, urlEncodedCredito);
+
+            if(resultadoCredito.StatusCode != HttpStatusCode.OK)
+                return BadRequest("Erro ao efetuar transacao de credito.");
+
+
+            return Ok();
+        }
+
         [HttpPost]
         [Route("pedido/{id}")]
         public ActionResult<IEnumerable<string>> CadastraItemPedido(int id, [FromBody]Pedido item)
@@ -91,7 +152,7 @@ namespace Livraria.Controllers
             return Ok();
         }
 
-        
+
         [HttpPut]
         [Route("pedido/{id}")]
         public ActionResult<IEnumerable<string>> AlteraItemPedido(int id, [FromBody]Pedido item)
@@ -102,7 +163,7 @@ namespace Livraria.Controllers
             return Ok();
         }
 
-        
+
         [HttpDelete]
         [Route("pedido/{id}")]
         public ActionResult<IEnumerable<string>> RemoveItemPedido(int id)
@@ -112,12 +173,12 @@ namespace Livraria.Controllers
             return Ok();
         }
 
-        
+
         [HttpGet]
         [Route("pedido/{id}")]
         public ActionResult<IEnumerable<string>> BuscarPedidos(int id)
         {
-            return Ok( pedido.Where(a => a.Codigo == id).FirstOrDefault());
+            return Ok(pedido.Where(a => a.Codigo == id).FirstOrDefault());
         }
 
         [HttpGet]
@@ -127,4 +188,16 @@ namespace Livraria.Controllers
             return Ok(pedido.Where(a => a.Codigo == id).Select(a => a.carrinho).ToList());
         }
     }
+    public class FInalizarPedidoEntrada
+    {
+        public Usuario Usuario { get; set; }
+        public Pedido Pedido { get; set; }
+        public Cartao Cartao { get; set; }
+    }
+    public class Cartao
+    {
+        public int Numerocartao { get; set; }
+        public int CodigoVerificador { get; set; }
+    }
+
 }

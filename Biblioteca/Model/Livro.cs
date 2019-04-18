@@ -7,7 +7,7 @@ namespace Livraria.Model
 {
     public class Livro
     {
-        public int codigo { get; set; }
+        public int Codigo { get; set; }
         public string Titulo { get; set; }
         public int QtdPagina { get; set; }
         public int Ano { get; set; }

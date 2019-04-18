@@ -16,10 +16,10 @@ namespace Livraria.Controllers
 
         List<Livro> livro = new List<Livro>
         {
-           new Livro { codigo =1, Autores = new string[] { "Autor A", "Autor B" }, Ano = 2000, QtdPagina = 150, Titulo = "Titulo 1", Tema = "tema 1"},
-           new Livro { codigo =1, Autores = new string[] { "Autor C", },           Ano = 2008, QtdPagina = 200, Titulo = "Titulo 2", Tema = "tema 2"},
-           new Livro { codigo =1, Autores = new string[] { "Autor B", },           Ano = 2006, QtdPagina = 200, Titulo = "Titulo 3", Tema = "tema 3"},
-           new Livro { codigo =1, Autores = new string[] { "Autor C", "Autor A" }, Ano = 2000, QtdPagina = 10,  Titulo = "Titulo 4", Tema = "tema 4"},
+           new Livro { Codigo =1, Autores = new string[] { "Autor A", "Autor B" }, Ano = 2000, QtdPagina = 150, Titulo = "Titulo 1", Tema = "tema 1"},
+           new Livro { Codigo =1, Autores = new string[] { "Autor C", },           Ano = 2008, QtdPagina = 200, Titulo = "Titulo 2", Tema = "tema 2"},
+           new Livro { Codigo =1, Autores = new string[] { "Autor B", },           Ano = 2006, QtdPagina = 200, Titulo = "Titulo 3", Tema = "tema 3"},
+           new Livro { Codigo =1, Autores = new string[] { "Autor C", "Autor A" }, Ano = 2000, QtdPagina = 10,  Titulo = "Titulo 4", Tema = "tema 4"},
 
         };
 
@@ -62,7 +62,7 @@ namespace Livraria.Controllers
         [Route("itens/{id}")]
         public ActionResult<IEnumerable<string>> BuscarItem(int id)
         {
-            return Ok(livro.Where(a => a.codigo == id).FirstOrDefault());
+            return Ok(livro.Where(a => a.Codigo == id).FirstOrDefault());
         }
         [HttpGet]
         [Route("itens/{autor}")]
