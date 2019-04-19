@@ -10,14 +10,13 @@ using Newtonsoft.Json;
 
 namespace Livraria.Controllers
 {
-    [Route("api/carrinho")]
+    [Route("v1/api/carrinho")]
     [ApiController]
     public class CarrinhoComprasController : ControllerBase
     {
-        private static readonly HttpClient client = new HttpClient();
+        private HttpClient client;
         public CarrinhoComprasController()
         {
-            client.BaseAddress = new System.Uri(@"https://localhost:5001/");
         }
         List<Carrinho> carrinho = new List<Carrinho>
         {
@@ -91,18 +90,23 @@ namespace Livraria.Controllers
         [Route("itens")]
         public async Task<ActionResult<IEnumerable<string>>> InsereItemCarrinho(int id, [FromBody]DadosEntradaInsercaoExclusaoCarrinho dadosEntrada)
         {
-
+            client = new HttpClient();
+            client.BaseAddress = new System.Uri(@"https://localhost:5005/");
             var dadosChaveValor = dadosEntrada.Usuario.ToKeyValue();
             var urlEncoded = new FormUrlEncodedContent(dadosChaveValor);
             var urlString = await urlEncoded.ReadAsStringAsync();
 
-            var urlRequisicao = $"/api/ValidarDados/usuario?{urlString}";
+            var urlRequisicao = $"/api/ValidarDados/usuarios/{dadosEntrada.Usuario.Codigo}";
             
             var resultado = await client.GetAsync(urlRequisicao);
             if (resultado.StatusCode != System.Net.HttpStatusCode.OK)
                 return NotFound("Dados de Usuario não encontrados.");
 
             var itensCarriho  = carrinho.Where(a => a.Codigo == id).FirstOrDefault();
+
+            if (itensCarriho == null)
+                return NotFound("Codigo do carrinho nao encontrado. ");
+
             if (itensCarriho.Livros.Where(a => a.Codigo == dadosEntrada.Livro.Codigo).Any())
                 return BadRequest("Item ja existente no carrinho");
 
@@ -115,18 +119,22 @@ namespace Livraria.Controllers
         [Route("itens/{id}")]
         public async Task<ActionResult<IEnumerable<string>>> AlteraItemCarrinho(int id, [FromBody]DadosEntradaAlteracaoCarrinho dadosEntrada )
         {
-
+            client = new HttpClient();
             var dadosChaveValor = dadosEntrada.Usuario.ToKeyValue();
             var urlEncoded = new FormUrlEncodedContent(dadosChaveValor);
             var urlString = await urlEncoded.ReadAsStringAsync();
 
-            var urlRequisicao = $"/api/ValidarDados/usuario?{urlString}";
+            var urlRequisicao = $"/api/ValidarDados/usuarios/{dadosEntrada.Usuario.Codigo}";
 
             var resultado = await client.GetAsync(urlRequisicao);
             if (resultado.StatusCode != System.Net.HttpStatusCode.OK)
                 return NotFound("Dados de Usuario não encontrados.");
 
             var cart = carrinho.Where(a => a.Codigo == dadosEntrada.Carrinho.Codigo).FirstOrDefault();
+
+            if (cart == null)
+                return NotFound("Codigo do carrinho nao encontrado. ");
+
             carrinho.Remove(cart);
             carrinho.Add(dadosEntrada.Carrinho);
             return Ok();
@@ -137,17 +145,22 @@ namespace Livraria.Controllers
         [Route("itens/{id}")]
         public async Task<ActionResult<IEnumerable<string>>> RemoveItemCarrinho(int id,[FromQuery]DadosEntradaInsercaoExclusaoCarrinho dadosEntrada)
         {
+            client = new HttpClient();
             var dadosChaveValor = dadosEntrada.Usuario.ToKeyValue();
             var urlEncoded = new FormUrlEncodedContent(dadosChaveValor);
             var urlString = await urlEncoded.ReadAsStringAsync();
 
-            var urlRequisicao = $"/api/ValidarDados/usuario?{urlString}";
+            var urlRequisicao = $"/api/ValidarDados/usuarios/{dadosEntrada.Usuario.Codigo}";
 
             var resultado = await client.GetAsync(urlRequisicao);
             if (resultado.StatusCode != System.Net.HttpStatusCode.OK)
                 return NotFound("Dados de Usuario não encontrados.");
 
             var cart = carrinho.Where(a => a.Codigo == id).FirstOrDefault();
+
+            if (cart == null)
+                return NotFound("Codigo do carrinho nao encontrado. ");
+
             carrinho.Remove(cart);
             return Ok();
         }
